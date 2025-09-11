@@ -5,12 +5,11 @@
  * Diagnoses and fixes common database connection issues
  */
 
-const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+import fs from 'fs'
+import { execSync } from 'child_process'
 
 function log(level, message) {
-  const timestamp = new Date().toISOString()
+  // const timestamp = new Date().toISOString() // Not used
   const colors = {
     info: '\x1b[36m',
     success: '\x1b[32m',
@@ -49,7 +48,7 @@ function getEnvVar(varName) {
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 

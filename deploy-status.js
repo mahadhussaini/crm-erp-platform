@@ -5,8 +5,7 @@
  * Shows current configuration and deployment readiness
  */
 
-const fs = require('fs')
-const path = require('path')
+import fs from 'fs'
 
 function checkFileExists(filePath) {
   try {
@@ -30,7 +29,7 @@ function checkEnvVar(varName, envFile = '.env.local') {
         return value && value !== '' && !value.includes('your-') && !value.includes('change-in-production')
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return false
   }
   return false

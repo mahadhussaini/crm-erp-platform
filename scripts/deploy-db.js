@@ -5,9 +5,7 @@
  * This script ensures the database schema is properly set up
  */
 
-const { execSync } = require('child_process')
-const fs = require('fs')
-const path = require('path')
+import { execSync } from 'child_process'
 
 function log(message) {
   console.log(`[${new Date().toISOString()}] ${message}`)
@@ -64,8 +62,8 @@ async function deployDatabase() {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   deployDatabase()
 }
 
-module.exports = { deployDatabase }
+export { deployDatabase }

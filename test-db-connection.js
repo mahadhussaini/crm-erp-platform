@@ -5,7 +5,7 @@
  * Tests database connectivity and basic operations
  */
 
-const { PrismaClient } = require('@prisma/client')
+import { PrismaClient } from '@prisma/client'
 
 async function testDatabaseConnection() {
   console.log('🔍 Testing Database Connection...')

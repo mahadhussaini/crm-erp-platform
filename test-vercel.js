@@ -5,9 +5,8 @@
  * Tests the application readiness for Vercel deployment
  */
 
-const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+import fs from 'fs'
+import { execSync } from 'child_process'
 
 function log(level, message) {
   const colors = {
@@ -69,7 +68,7 @@ function checkVercelConfiguration() {
       if (!vercelConfig.buildCommand?.includes('prisma generate')) {
         recommendations.push('⚠️  Consider adding "prisma generate" to build command')
       }
-    } catch (error) {
+    } catch (_error) {
       issues.push('❌ vercel.json is not valid JSON')
     }
   }
@@ -99,7 +98,7 @@ function checkVercelConfiguration() {
         recommendations.push('⚠️  Consider adding mysql2 for MySQL database support')
       }
 
-    } catch (error) {
+    } catch (_error) {
       issues.push('❌ package.json is not valid JSON')
     }
   } else {
@@ -123,7 +122,7 @@ function checkEnvironmentVariables() {
   log('info', 'Checking environment variables...')
 
   const required = ['DATABASE_URL', 'NEXTAUTH_URL', 'NEXTAUTH_SECRET']
-  const optional = ['STRIPE_SECRET_KEY', 'TWILIO_ACCOUNT_SID']
+  // const optional = ['STRIPE_SECRET_KEY', 'TWILIO_ACCOUNT_SID'] // Not used in this function
 
   const missing = []
   const invalid = []
@@ -200,7 +199,7 @@ function generateDeploymentSummary() {
   try {
     fs.writeFileSync('vercel-deployment-summary.json', JSON.stringify(summary, null, 2))
     log('success', '✅ Deployment summary saved to vercel-deployment-summary.json')
-  } catch (error) {
+  } catch (_error) {
     log('warning', '⚠️  Could not save deployment summary')
   }
 

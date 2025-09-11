@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useSession, signOut } from "next-auth/react"
+import Image from "next/image"
 import { Bell, Search, Menu, LogOut, User, Settings } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -36,9 +37,11 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <img
+            <Image
               src="/logo.svg"
               alt="CRM/ERP Platform"
+              width={32}
+              height={32}
               className="h-8 w-auto"
             />
             <span className="text-lg font-bold text-gray-900 hidden sm:block">CRM/ERP</span>

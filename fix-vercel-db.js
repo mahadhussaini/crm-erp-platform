@@ -5,9 +5,8 @@
  * Fixes common database issues for Vercel deployments
  */
 
-const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+import fs from 'fs'
+import { execSync } from 'child_process'
 
 function log(level, message) {
   const colors = {
@@ -48,7 +47,7 @@ function getEnvVar(varName) {
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 
@@ -248,7 +247,7 @@ function testDatabaseConnection() {
     fs.unlinkSync('temp-db-test.js')
     log('success', '✅ Database connection test passed')
     return true
-  } catch (error) {
+  } catch (_error) {
     if (fs.existsSync('temp-db-test.js')) {
       fs.unlinkSync('temp-db-test.js')
     }

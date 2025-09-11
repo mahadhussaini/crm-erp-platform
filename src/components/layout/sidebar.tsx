@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -74,16 +75,20 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         {!isCollapsed ? (
           <div className="flex items-center space-x-2">
-            <img
+            <Image
               src="/logo.svg"
               alt="CRM/ERP Platform"
+              width={32}
+              height={32}
               className="h-8 w-auto"
             />
           </div>
         ) : (
-          <img
+          <Image
             src="/logo.svg"
             alt="CRM/ERP Platform"
+            width={24}
+            height={24}
             className="h-6 w-auto mx-auto"
           />
         )}
