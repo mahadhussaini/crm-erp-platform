@@ -34,11 +34,14 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = db
 }
 
-// Export a health check function optimized for MySQL
+// Export a health check function optimized for PostgreSQL
 export async function checkDatabaseHealth() {
   try {
-    // For MySQL, use a simple SELECT query
-    if (process.env.DATABASE_URL?.includes('mysql://')) {
+    // For PostgreSQL, use a simple SELECT query
+    if (process.env.DATABASE_URL?.includes('postgresql://')) {
+      await db.$queryRaw`SELECT 1 as health_check`
+    } else if (process.env.DATABASE_URL?.includes('mysql://')) {
+      // For MySQL compatibility
       await db.$queryRaw`SELECT 1 as health_check`
     } else {
       // For SQLite or other databases

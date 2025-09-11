@@ -15,12 +15,12 @@ const environments = {
     NEXTAUTH_SECRET: 'dev-secret-key-change-in-production'
   },
   production: {
-    DATABASE_URL: 'mysql://username:password@host:port/database?sslaccept=strict',
+    DATABASE_URL: 'postgresql://username:password@host:port/database?sslmode=require',
     NEXTAUTH_URL: 'https://your-app.vercel.app',
     NEXTAUTH_SECRET: 'your-super-secret-key-here'
   },
   vercel: {
-    DATABASE_URL: 'mysql://username:password@host:port/database?sslaccept=strict',
+    DATABASE_URL: 'postgresql://username:password@host:port/database?sslmode=require',
     NEXTAUTH_URL: 'https://your-app.vercel.app',
     NEXTAUTH_SECRET: 'your-super-secret-key-here'
   }
@@ -105,13 +105,13 @@ function main() {
 2. Go to your Vercel project dashboard
 3. Navigate to Settings → Environment Variables
 4. Add each variable from .env.vercel
-5. Update DATABASE_URL with your PlanetScale connection string
+5. Update DATABASE_URL with your PostgreSQL connection string (Neon, Supabase, etc.)
 6. Redeploy your application
 `)
   } else if (env === 'production') {
     console.log(`
 📋 Next steps for production deployment:
-1. Update DATABASE_URL with your MySQL connection string
+1. Update DATABASE_URL with your PostgreSQL connection string
 2. Configure NEXTAUTH_URL with your domain
 3. Generate a secure NEXTAUTH_SECRET
 4. Add third-party service keys as needed

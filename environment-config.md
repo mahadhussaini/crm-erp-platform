@@ -14,13 +14,13 @@ DATABASE_URL="file:./dev.db"
 - For development: `file:./dev.db`
 - SQLite automatically creates the database file if it doesn't exist
 
-#### For Vercel/Production (PlanetScale or MySQL)
+#### For Vercel/Production (PostgreSQL)
 ```env
-DATABASE_URL="mysql://username:password@host:port/database?sslaccept=strict"
+DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require"
 ```
-- Use PlanetScale, Railway, or AWS RDS
-- PlanetScale recommended for Vercel deployments
-- Format: `mysql://user:pass@host:port/db?sslaccept=strict`
+- Use Neon, Supabase, Railway, or AWS RDS PostgreSQL
+- Neon recommended for Vercel deployments (free tier available)
+- Format: `postgresql://user:pass@host:port/db?sslmode=require`
 
 ### NextAuth.js Configuration
 ```env
