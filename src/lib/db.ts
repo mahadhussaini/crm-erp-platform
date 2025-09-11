@@ -4,26 +4,20 @@ declare global {
   var prisma: PrismaClient | undefined
 }
 
-// Prisma client configuration with error handling
+// Prisma client configuration optimized for Vercel/serverless
 const createPrismaClient = () => {
   try {
+    // Check if DATABASE_URL is set
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is not set')
+    }
+
+    console.log('🔧 Creating Prisma client with URL:', process.env.DATABASE_URL.replace(/\/\/.*@/, '//***:***@'))
+
     const prisma = new PrismaClient({
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
       errorFormat: 'minimal',
     })
-
-    // Test the connection
-    prisma.$connect()
-      .then(() => {
-        console.log('✅ Database connected successfully')
-      })
-      .catch((error) => {
-        console.error('❌ Database connection failed:', error.message)
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Please check your DATABASE_URL in .env.local')
-          console.error('Make sure PostgreSQL is running and accessible')
-        }
-      })
 
     return prisma
   } catch (error) {
@@ -32,13 +26,32 @@ const createPrismaClient = () => {
   }
 }
 
+// Use existing client or create new one
 export const db = globalThis.prisma || createPrismaClient()
 
+// In production/serverless environments, don't cache the client to avoid connection issues
 if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = db
 }
 
-// Graceful shutdown
-process.on('beforeExit', async () => {
-  await db.$disconnect()
-})
+// Export a health check function optimized for MySQL
+export async function checkDatabaseHealth() {
+  try {
+    // For MySQL, use a simple SELECT query
+    if (process.env.DATABASE_URL?.includes('mysql://')) {
+      await db.$queryRaw`SELECT 1 as health_check`
+    } else {
+      // For SQLite or other databases
+      await db.$queryRaw`SELECT 1`
+    }
+
+    return { status: 'healthy', message: 'Database connection successful' }
+  } catch (error) {
+    console.error('Database health check failed:', error)
+    return {
+      status: 'unhealthy',
+      message: 'Database connection failed',
+      error: error instanceof Error ? error.message : String(error)
+    }
+  }
+}

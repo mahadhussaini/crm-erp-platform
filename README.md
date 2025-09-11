@@ -212,6 +212,45 @@ The platform is optimized for Vercel deployment:
 
 **📖 [Complete Vercel Deployment Guide](VERCEL-DEPLOYMENT.md)**
 
+### Troubleshooting Vercel Issues
+If you encounter deployment errors:
+
+**📖 [Vercel Fix Guide](VERCEL-FIX-GUIDE.md)** - Complete troubleshooting for common issues
+
+**Quick Commands:**
+```bash
+# Test your Vercel deployment
+npm run vercel:test https://your-app.vercel.app
+
+# Check deployment status
+npm run deploy:status
+
+# Run full troubleshooting
+npm run troubleshoot
+```
+
+**Common Issues:**
+- **Database Connection Error**: Check PlanetScale setup and DATABASE_URL
+- **Prisma Client Error**: Ensure `prisma generate` runs in build
+- **Environment Variables**: Verify all required vars are set in Vercel
+
+### Troubleshooting
+If you encounter deployment issues or 500 errors:
+
+**📖 [500 Error Troubleshooting Guide](DEBUG-500-ERROR.md)**
+
+**Quick commands:**
+```bash
+# Check deployment readiness
+npm run deploy:status
+
+# Run comprehensive troubleshooting
+npm run troubleshoot all
+
+# Test database connection
+npm run troubleshoot db
+```
+
 ### Authentication Configuration
 
 Configure NextAuth.js settings:

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "prisma generate && npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "functions": {
@@ -8,6 +8,10 @@
     },
     "src/app/**/*.tsx": {
       "maxDuration": 30
+    },
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "rewrites": [
@@ -23,11 +27,16 @@
         {
           "key": "Cache-Control",
           "value": "no-cache"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "regions": ["iad1"]
 }
