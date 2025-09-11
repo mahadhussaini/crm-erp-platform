@@ -2,102 +2,130 @@
 
 /**
  * Database Connection Test Script
- * Tests the database connection with your current configuration
+ * Tests database connectivity and basic operations
  */
 
 const { PrismaClient } = require('@prisma/client')
-require('dotenv').config({ path: '.env.local' })
 
 async function testDatabaseConnection() {
-  console.log('🧪 Testing Database Connection...\n')
-
-  // Check environment variables
-  console.log('📋 Environment Check:')
-  console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'}`)
-  console.log(`   NEXTAUTH_SECRET: ${process.env.NEXTAUTH_SECRET ? '✅ Set' : '❌ Not set'}`)
-  console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`)
-
-  if (!process.env.DATABASE_URL) {
-    console.log('\n❌ DATABASE_URL is not set. Please check your .env.local file.')
-    return
-  }
-
-  // Show database type
-  const dbType = process.env.DATABASE_URL.includes('postgresql://') ? 'PostgreSQL' : 
-                 process.env.DATABASE_URL.includes('mysql://') ? 'MySQL' : 
-                 process.env.DATABASE_URL.includes('file:') ? 'SQLite' : 'Unknown'
-  console.log(`   Database Type: ${dbType}`)
-
-  console.log('\n🔗 Testing Connection...')
+  console.log('🔍 Testing Database Connection...')
+  console.log('=' .repeat(50))
 
   const prisma = new PrismaClient({
-    log: ['query', 'error', 'warn'],
+    log: ['query', 'error', 'warn']
   })
 
   try {
+    console.log('📡 Connecting to database...')
+
     // Test basic connection
-    console.log('   Testing basic connection...')
-    await prisma.$queryRaw`SELECT 1 as test`
-    console.log('   ✅ Basic connection successful')
+    await prisma.$connect()
+    console.log('✅ Database connection successful')
 
-    // Test if tables exist
-    console.log('   Checking if tables exist...')
-    const tables = await prisma.$queryRaw`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `
-    console.log(`   ✅ Found ${tables.length} tables in database`)
+    // Test raw query
+    console.log('🔍 Testing raw query...')
+    const testResult = await prisma.$queryRaw`SELECT 1 as test_value, datetime('now') as current_time`
+    console.log('✅ Raw query successful:', testResult)
 
-    if (tables.length === 0) {
-      console.log('\n⚠️  No tables found. You may need to run:')
-      console.log('   npm run db:push')
-    }
-
-    // Test User table specifically
+    // Test user table (if exists)
+    console.log('👤 Testing User table access...')
     try {
       const userCount = await prisma.user.count()
-      console.log(`   ✅ User table accessible (${userCount} users)`)
+      console.log(`✅ User table accessible (${userCount} users found)`)
     } catch (error) {
-      console.log('   ⚠️  User table not found or not accessible')
-      console.log('   This is expected if you haven\'t run migrations yet')
+      console.log('⚠️  User table not accessible (this is OK for fresh databases):', error.message)
+    }
+
+    // Test other tables
+    const tables = ['lead', 'company', 'contact', 'product', 'order']
+
+    for (const table of tables) {
+      try {
+        const count = await prisma[table].count()
+        console.log(`✅ ${table} table accessible (${count} records)`)
+      } catch (error) {
+        console.log(`⚠️  ${table} table not accessible:`, error.message)
+      }
     }
 
     console.log('\n🎉 Database connection test completed successfully!')
-    console.log('\n📋 Next Steps:')
-    console.log('   1. If tables are missing, run: npm run db:push')
-    console.log('   2. Commit and push your changes to trigger Vercel redeploy')
-    console.log('   3. Test your Vercel deployment')
+    console.log('=' .repeat(50))
 
   } catch (error) {
-    console.log('\n❌ Database connection failed:')
-    console.log(`   Error: ${error.message}`)
-    
-    if (error.code === 'P1001') {
-      console.log('\n💡 This usually means:')
-      console.log('   - Database server is not running')
-      console.log('   - Connection string is incorrect')
-      console.log('   - Network connectivity issues')
-    } else if (error.code === 'P1003') {
-      console.log('\n💡 This usually means:')
-      console.log('   - Database does not exist')
-      console.log('   - Wrong database name in connection string')
-    } else if (error.code === 'P1017') {
-      console.log('\n💡 This usually means:')
-      console.log('   - Database connection was closed')
-      console.log('   - Connection timeout')
+    console.log('\n❌ Database connection test failed!')
+    console.log('=' .repeat(50))
+    console.log('Error details:')
+    console.log('Message:', error.message)
+
+    if (error.code) {
+      console.log('Code:', error.code)
     }
 
-    console.log('\n🔧 Troubleshooting:')
-    console.log('   1. Check your DATABASE_URL in .env.local')
-    console.log('   2. Verify your database is running and accessible')
-    console.log('   3. Check firewall/network settings')
-    console.log('   4. Try running: npm run db:push')
+    if (error.meta) {
+      console.log('Meta:', JSON.stringify(error.meta, null, 2))
+    }
+
+    console.log('\n🔧 Troubleshooting suggestions:')
+    console.log('1. Check your DATABASE_URL environment variable')
+    console.log('2. Verify database credentials and connectivity')
+    console.log('3. Ensure database server is running')
+    console.log('4. Check firewall and network settings')
+    console.log('5. Run: node troubleshoot.js check')
+
+    process.exit(1)
 
   } finally {
     await prisma.$disconnect()
   }
 }
 
-// Run the test
-testDatabaseConnection().catch(console.error)
+// Handle command line arguments
+const args = process.argv.slice(2)
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+🧪 Database Connection Test Script
+
+Usage: node test-db-connection.js [options]
+
+Options:
+  --help, -h    Show this help message
+  --verbose     Show detailed query logs
+  --quiet       Suppress non-error output
+
+This script tests:
+- Database connectivity
+- Basic query execution
+- Table access permissions
+- Schema compatibility
+
+For Vercel deployment troubleshooting:
+1. Run locally: node test-db-connection.js
+2. Fix any connection issues
+3. Test with your PlanetScale credentials
+4. Deploy to Vercel
+
+Environment Variables Required:
+- DATABASE_URL: Database connection string
+
+Examples:
+  node test-db-connection.js
+  node test-db-connection.js --verbose
+`)
+  process.exit(0)
+}
+
+// Handle verbose mode
+if (args.includes('--verbose')) {
+  process.env.DEBUG = 'prisma:*'
+}
+
+// Handle quiet mode
+if (args.includes('--quiet')) {
+  console.log = () => {} // Suppress console.log
+}
+
+testDatabaseConnection().catch((error) => {
+  console.error('Unexpected error:', error)
+  process.exit(1)
+})

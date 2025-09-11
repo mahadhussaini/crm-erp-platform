@@ -1,231 +1,374 @@
 #!/usr/bin/env node
 
 /**
- * Troubleshooting Script for CRM/ERP Platform
- * Helps diagnose deployment and database issues
+ * Database Troubleshooting Script for CRM/ERP Platform
+ * Diagnoses and fixes common database connection issues
  */
 
 const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
 
-function log(message, type = 'info') {
-  const icons = {
-    info: 'ℹ️',
-    success: '✅',
-    warning: '⚠️',
-    error: '❌',
-    debug: '🔍'
+function log(level, message) {
+  const timestamp = new Date().toISOString()
+  const colors = {
+    info: '\x1b[36m',
+    success: '\x1b[32m',
+    warning: '\x1b[33m',
+    error: '\x1b[31m',
+    reset: '\x1b[0m'
   }
-
-  console.log(`${icons[type]} ${message}`)
+  console.log(`${colors[level]}[${level.toUpperCase()}]${colors.reset} ${message}`)
 }
 
-function checkFileExists(filePath, description) {
-  const exists = fs.existsSync(filePath)
-  const status = exists ? 'success' : 'error'
-  log(`${description}: ${exists ? 'Found' : 'Missing'}`, status)
-  return exists
-}
-
-function checkEnvironmentVariable(varName, description) {
-  const value = process.env[varName]
-  const exists = !!value
-  const status = exists ? 'success' : 'error'
-
-  if (exists && varName.includes('DATABASE_URL')) {
-    const maskedValue = value.replace(/\/\/.*@/, '//***:***@')
-    log(`${description}: Set (${maskedValue})`, status)
-  } else if (exists && varName.includes('SECRET')) {
-    log(`${description}: Set (masked)`, status)
-  } else {
-    log(`${description}: ${exists ? 'Set' : 'Not set'}`, status)
-  }
-
-  return exists
-}
-
-function testDatabaseConnection() {
-  log('Testing database connection...', 'debug')
-
-  if (!process.env.DATABASE_URL) {
-    log('DATABASE_URL not set, skipping database test', 'warning')
-    return false
-  }
-
+function checkFileExists(filePath) {
   try {
-    // Try to run a simple Prisma command
-    execSync('npx prisma db push --preview-feature', { stdio: 'pipe' })
-    log('Database connection successful', 'success')
+    fs.accessSync(filePath, fs.constants.F_OK)
     return true
-  } catch (error) {
-    log('Database connection failed', 'error')
-    log(`Error: ${error.message}`, 'debug')
+  } catch {
     return false
   }
 }
 
-function checkVercelConfiguration() {
-  log('Checking Vercel configuration...', 'debug')
-
-  const vercelJson = path.join(process.cwd(), 'vercel.json')
-  if (!checkFileExists(vercelJson, 'vercel.json')) {
-    return false
+function getEnvVar(varName) {
+  // Check process.env first
+  if (process.env[varName]) {
+    return process.env[varName]
   }
+
+  // Check .env.local file
+  try {
+    if (checkFileExists('.env.local')) {
+      const envContent = fs.readFileSync('.env.local', 'utf8')
+      const lines = envContent.split('\n')
+
+      for (const line of lines) {
+        if (line.trim().startsWith(varName + '=')) {
+          const value = line.split('=')[1]?.replace(/["']/g, '').trim()
+          return value
+        }
+      }
+    }
+  } catch (error) {
+    return null
+  }
+
+  return null
+}
+
+function validateDatabaseUrl(url) {
+  if (!url) return { valid: false, error: 'DATABASE_URL is not set' }
 
   try {
-    const config = JSON.parse(fs.readFileSync(vercelJson, 'utf8'))
-    const hasPrismaGenerate = config.buildCommand?.includes('prisma generate')
+    const urlObj = new URL(url)
 
-    if (hasPrismaGenerate) {
-      log('Vercel build command includes prisma generate', 'success')
+    if (url.startsWith('file:')) {
+      // SQLite validation
+      const dbPath = url.replace('file:', '')
+      const fullPath = path.resolve(dbPath)
+
+      // Check if directory exists
+      const dir = path.dirname(fullPath)
+      if (!fs.existsSync(dir)) {
+        return { valid: false, error: `Directory does not exist: ${dir}` }
+      }
+
+      return { valid: true, type: 'sqlite', path: fullPath }
+    } else if (url.includes('mysql://') || url.includes('planetscale://')) {
+      // MySQL/PlanetScale validation
+      if (!urlObj.hostname || !urlObj.pathname) {
+        return { valid: false, error: 'Invalid MySQL connection string format' }
+      }
+
+      return {
+        valid: true,
+        type: 'mysql',
+        host: urlObj.hostname,
+        database: urlObj.pathname.slice(1)
+      }
     } else {
-      log('Vercel build command missing prisma generate', 'warning')
+      return { valid: false, error: 'Unsupported database type' }
     }
-
-    return hasPrismaGenerate
   } catch (error) {
-    log('Error reading vercel.json', 'error')
-    return false
+    return { valid: false, error: `Invalid URL format: ${error.message}` }
   }
+}
+
+function checkPrismaSetup() {
+  log('info', 'Checking Prisma setup...')
+
+  const issues = []
+
+  // Check if Prisma schema exists
+  if (!checkFileExists('prisma/schema.prisma')) {
+    issues.push('❌ prisma/schema.prisma not found')
+  } else {
+    log('success', '✅ Prisma schema found')
+  }
+
+  // Check if node_modules/.prisma exists
+  if (!checkFileExists('node_modules/.prisma')) {
+    issues.push('❌ Prisma client not generated')
+  } else {
+    log('success', '✅ Prisma client exists')
+  }
+
+  // Check if migrations directory exists
+  if (!checkFileExists('prisma/migrations')) {
+    issues.push('⚠️  No migrations found (this is OK for new projects)')
+  } else {
+    log('success', '✅ Database migrations exist')
+  }
+
+  return issues
 }
 
 function checkDependencies() {
-  log('Checking dependencies...', 'debug')
+  log('info', 'Checking dependencies...')
 
-  const packageJson = path.join(process.cwd(), 'package.json')
-  if (!checkFileExists(packageJson, 'package.json')) {
-    return false
-  }
+  const issues = []
 
   try {
-    const pkg = JSON.parse(fs.readFileSync(packageJson, 'utf8'))
-    const deps = pkg.dependencies || {}
+    // Check if mysql2 is installed (for MySQL)
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies }
 
-    const requiredDeps = ['@prisma/client', 'prisma', 'mysql2', 'next-auth']
-    let allPresent = true
+    if (!dependencies.mysql2 && !dependencies['@planetscale/serverless']) {
+      issues.push('⚠️  MySQL driver not found - install with: npm install mysql2')
+    } else {
+      log('success', '✅ Database drivers found')
+    }
 
-    for (const dep of requiredDeps) {
-      if (deps[dep]) {
-        log(`Dependency ${dep}: ${deps[dep]}`, 'success')
-      } else {
-        log(`Dependency ${dep}: Missing`, 'error')
-        allPresent = false
+    if (!dependencies.prisma) {
+      issues.push('❌ Prisma not found in dependencies')
+    } else {
+      log('success', '✅ Prisma dependency found')
+    }
+
+  } catch (error) {
+    issues.push('❌ Error reading package.json')
+  }
+
+  return issues
+}
+
+function generatePrismaClient() {
+  log('info', 'Generating Prisma client...')
+
+  try {
+    execSync('npx prisma generate', { stdio: 'inherit' })
+    log('success', '✅ Prisma client generated successfully')
+    return true
+  } catch (error) {
+    log('error', `❌ Failed to generate Prisma client: ${error.message}`)
+    return false
+  }
+}
+
+function pushDatabaseSchema() {
+  log('info', 'Pushing database schema...')
+
+  try {
+    execSync('npx prisma db push', { stdio: 'inherit' })
+    log('success', '✅ Database schema pushed successfully')
+    return true
+  } catch (error) {
+    log('error', `❌ Failed to push schema: ${error.message}`)
+    return false
+  }
+}
+
+function testDatabaseConnection() {
+  log('info', 'Testing database connection...')
+
+  const testCode = `
+    const { PrismaClient } = require('@prisma/client')
+    const prisma = new PrismaClient()
+
+    async function test() {
+      try {
+        await prisma.$connect()
+        console.log('Database connection successful')
+        await prisma.$disconnect()
+        process.exit(0)
+      } catch (error) {
+        console.error('Database connection failed:', error.message)
+        process.exit(1)
       }
     }
 
-    return allPresent
+    test()
+  `
+
+  try {
+    fs.writeFileSync('temp-db-test.js', testCode)
+    execSync('node temp-db-test.js', { stdio: 'inherit' })
+    fs.unlinkSync('temp-db-test.js')
+    log('success', '✅ Database connection test passed')
+    return true
   } catch (error) {
-    log('Error reading package.json', 'error')
+    fs.unlinkSync('temp-db-test.js')
+    log('error', `❌ Database connection test failed: ${error.message}`)
     return false
   }
 }
 
-function generateReport() {
-  log('\n📊 TROUBLESHOOTING REPORT\n', 'info')
+function fixCommonIssues() {
+  log('info', 'Attempting to fix common issues...')
 
-  console.log('=' .repeat(50))
+  const fixes = []
 
-  // File checks
-  console.log('\n📁 FILES:')
-  const files = [
-    { path: 'package.json', desc: 'Package configuration' },
-    { path: 'prisma/schema.prisma', desc: 'Database schema' },
-    { path: 'vercel.json', desc: 'Vercel configuration' },
-    { path: '.env.local', desc: 'Local environment variables' },
-    { path: 'src/lib/db.ts', desc: 'Database connection' },
-    { path: 'src/lib/auth.ts', desc: 'Authentication setup' }
-  ]
+  // Fix 1: Generate Prisma client
+  if (!checkFileExists('node_modules/.prisma')) {
+    log('info', 'Fixing: Generating Prisma client...')
+    if (generatePrismaClient()) {
+      fixes.push('✅ Generated Prisma client')
+    }
+  }
 
-  files.forEach(file => {
-    checkFileExists(file.path, file.desc)
-  })
+  // Fix 2: Push schema if no migrations exist
+  if (!checkFileExists('prisma/migrations') && checkFileExists('prisma/schema.prisma')) {
+    log('info', 'Fixing: Pushing schema to database...')
+    if (pushDatabaseSchema()) {
+      fixes.push('✅ Pushed schema to database')
+    }
+  }
 
-  // Environment checks
-  console.log('\n🔧 ENVIRONMENT:')
-  const envVars = [
-    { name: 'DATABASE_URL', desc: 'Database connection' },
-    { name: 'NEXTAUTH_URL', desc: 'NextAuth URL' },
-    { name: 'NEXTAUTH_SECRET', desc: 'NextAuth secret' },
-    { name: 'NODE_ENV', desc: 'Environment mode' }
-  ]
+  return fixes
+}
 
-  envVars.forEach(env => {
-    checkEnvironmentVariable(env.name, env.desc)
-  })
+function showEnvironmentInfo() {
+  log('info', 'Environment Information:')
 
-  // Dependency checks
-  console.log('\n📦 DEPENDENCIES:')
-  checkDependencies()
+  const databaseUrl = getEnvVar('DATABASE_URL')
+  const nextauthUrl = getEnvVar('NEXTAUTH_URL')
+  const nextauthSecret = getEnvVar('NEXTAUTH_SECRET')
 
-  // Database checks
-  console.log('\n💾 DATABASE:')
-  testDatabaseConnection()
+  console.log(`  DATABASE_URL: ${databaseUrl ? '✅ Set' : '❌ Not set'}`)
+  console.log(`  NEXTAUTH_URL: ${nextauthUrl ? '✅ Set' : '❌ Not set'}`)
+  console.log(`  NEXTAUTH_SECRET: ${nextauthSecret ? '✅ Set' : '❌ Not set'}`)
+  console.log(`  Node Version: ${process.version}`)
+  console.log(`  Platform: ${process.platform}`)
+  console.log(`  Working Directory: ${process.cwd()}`)
 
-  // Vercel checks
-  console.log('\n🚀 VERCEL:')
-  checkVercelConfiguration()
+  if (databaseUrl) {
+    const dbValidation = validateDatabaseUrl(databaseUrl)
+    console.log(`  Database Type: ${dbValidation.valid ? dbValidation.type : '❌ Invalid'}`)
+    if (!dbValidation.valid) {
+      console.log(`  Database Error: ${dbValidation.error}`)
+    }
+  }
+}
 
-  console.log('\n' + '=' .repeat(50))
-  console.log('\n🔧 QUICK FIXES:\n')
+function showHelp() {
+  console.log(`
+🔧 Database Troubleshooting Tool for CRM/ERP Platform
 
-  console.log('1. Set up environment variables:')
-  console.log('   node env-setup.js vercel')
-  console.log('   # Copy .env.vercel to Vercel dashboard\n')
+Usage: node troubleshoot.js [command]
 
-  console.log('2. Test database locally:')
-  console.log('   npm run db:generate')
-  console.log('   npm run db:push')
-  console.log('   npm run dev\n')
+Commands:
+  check     - Check database setup and configuration
+  fix       - Attempt to fix common database issues
+  test      - Test database connection
+  generate  - Generate Prisma client
+  push      - Push schema to database
+  help      - Show this help message
 
-  console.log('3. Redeploy to Vercel:')
-  console.log('   - Go to Vercel dashboard')
-  console.log('   - Trigger new deployment')
-  console.log('   - Check build logs for errors\n')
+Quick Diagnosis:
+  node troubleshoot.js check
 
-  console.log('4. Test deployed API:')
-  console.log('   curl https://your-app.vercel.app/api/test-db\n')
+Auto-Fix Common Issues:
+  node troubleshoot.js fix
 
-  console.log('5. Check Vercel function logs:')
-  console.log('   - Go to Vercel dashboard > Functions')
-  console.log('   - Click on failing function')
-  console.log('   - Check logs for detailed errors\n')
+Test Connection:
+  node troubleshoot.js test
 
-  console.log('📖 For more help, see:')
-  console.log('   - VERCEL-DEPLOYMENT.md')
-  console.log('   - environment-config.md')
-  console.log('   - DEPLOYMENT-GUIDE.md\n')
+For Vercel Deployment:
+1. Run: node troubleshoot.js check
+2. Fix any issues found
+3. Ensure DATABASE_URL is set in Vercel dashboard
+4. Redeploy your application
+
+Common Issues:
+- DATABASE_URL not set or invalid
+- Prisma client not generated
+- Database schema not pushed
+- Missing MySQL driver (mysql2)
+- Network connectivity issues
+`)
 }
 
 function main() {
-  console.log('🔧 CRM/ERP Platform - Troubleshooting Script\n')
-
   const args = process.argv.slice(2)
+  const command = args[0] || 'check'
 
-  if (args.includes('--help') || args.includes('-h')) {
-    console.log('Usage: node troubleshoot.js [options]\n')
-    console.log('Options:')
-    console.log('  --report    Generate full troubleshooting report (default)')
-    console.log('  --db-test   Test database connection')
-    console.log('  --deps      Check dependencies')
-    console.log('  --help, -h  Show this help\n')
-    return
+  console.log('🔧 CRM/ERP Platform Database Troubleshooter')
+  console.log('=' .repeat(50))
+
+  switch (command) {
+    case 'check':
+      showEnvironmentInfo()
+      console.log()
+
+      const prismaIssues = checkPrismaSetup()
+      const depIssues = checkDependencies()
+
+      const allIssues = [...prismaIssues, ...depIssues]
+
+      if (allIssues.length === 0) {
+        log('success', '✅ No issues found! Your database setup looks good.')
+      } else {
+        log('warning', 'Issues found:')
+        allIssues.forEach(issue => console.log(`  ${issue}`))
+      }
+      break
+
+    case 'fix':
+      const fixes = fixCommonIssues()
+      if (fixes.length > 0) {
+        log('success', 'Applied fixes:')
+        fixes.forEach(fix => console.log(`  ${fix}`))
+      } else {
+        log('info', 'No automatic fixes available. Check the issues above.')
+      }
+      break
+
+    case 'test':
+      testDatabaseConnection()
+      break
+
+    case 'generate':
+      generatePrismaClient()
+      break
+
+    case 'push':
+      pushDatabaseSchema()
+      break
+
+    case 'help':
+    case '--help':
+    case '-h':
+      showHelp()
+      break
+
+    default:
+      log('error', `Unknown command: ${command}`)
+      showHelp()
+      break
   }
 
-  if (args.includes('--db-test')) {
-    testDatabaseConnection()
-    return
-  }
-
-  if (args.includes('--deps')) {
-    checkDependencies()
-    return
-  }
-
-  // Default: generate full report
-  generateReport()
+  console.log('\n' + '=' .repeat(50))
+  console.log('Need help? Check the documentation or create an issue on GitHub.')
 }
 
 if (require.main === module) {
   main()
+}
+
+module.exports = {
+  checkFileExists,
+  getEnvVar,
+  validateDatabaseUrl,
+  checkPrismaSetup,
+  checkDependencies
 }

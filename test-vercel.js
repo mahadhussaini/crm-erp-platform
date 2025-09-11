@@ -1,162 +1,281 @@
 #!/usr/bin/env node
 
 /**
- * Quick Vercel Deployment Test Script
- * Tests critical endpoints and provides immediate feedback
+ * Vercel Deployment Test Script
+ * Tests the application readiness for Vercel deployment
  */
 
-const https = require('https')
+const fs = require('fs')
+const path = require('path')
+const { execSync } = require('child_process')
 
-function makeRequest(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(url, options, (res) => {
-      let data = ''
-
-      res.on('data', (chunk) => {
-        data += chunk
-      })
-
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data)
-          resolve({
-            status: res.statusCode,
-            data: jsonData,
-            headers: res.headers
-          })
-        } catch (error) {
-          resolve({
-            status: res.statusCode,
-            data: data,
-            headers: res.headers
-          })
-        }
-      })
-    })
-
-    req.on('error', (error) => {
-      reject(error)
-    })
-
-    if (options.method === 'POST' && options.data) {
-      req.write(JSON.stringify(options.data))
-    }
-
-    req.end()
-  })
+function log(level, message) {
+  const colors = {
+    info: '\x1b[36m',
+    success: '\x1b[32m',
+    warning: '\x1b[33m',
+    error: '\x1b[31m',
+    reset: '\x1b[0m'
+  }
+  console.log(`${colors[level]}[${level.toUpperCase()}]${colors.reset} ${message}`)
 }
 
-async function testEndpoint(name, url, options = {}) {
-  console.log(`🔍 Testing ${name}...`)
-
+function checkFileExists(filePath) {
   try {
-    const response = await makeRequest(url, options)
-
-    if (response.status === 200 || response.status === 201) {
-      console.log(`✅ ${name}: SUCCESS (${response.status})`)
-
-      if (response.data && typeof response.data === 'object') {
-        if (response.data.success === false) {
-          console.log(`⚠️  ${name}: API returned error:`, response.data.error)
-          return false
-        } else if (response.data.database) {
-          console.log(`💾 Database status: ${response.data.database.status}`)
-          return response.data.database.status === 'healthy'
-        }
-      }
-
-      return true
-    } else {
-      console.log(`❌ ${name}: FAILED (${response.status})`)
-      if (response.data && response.data.error) {
-        console.log(`   Error: ${response.data.error}`)
-        if (response.data.details) {
-          console.log(`   Details: ${response.data.details}`)
-        }
-      }
-      return false
-    }
-  } catch (error) {
-    console.log(`❌ ${name}: ERROR - ${error.message}`)
+    fs.accessSync(filePath, fs.constants.F_OK)
+    return true
+  } catch {
     return false
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2)
-
-  if (args.length === 0) {
-    console.log('❌ Please provide your Vercel app URL')
-    console.log('Usage: node test-vercel.js https://your-app.vercel.app')
-    console.log('Example: node test-vercel.js https://crm-erp-platform.vercel.app')
-    process.exit(1)
+function getEnvVar(varName) {
+  if (process.env[varName]) {
+    return process.env[varName]
   }
 
-  const baseUrl = args[0].replace(/\/$/, '') // Remove trailing slash
-  console.log(`🚀 Testing Vercel deployment: ${baseUrl}\n`)
+  try {
+    if (checkFileExists('.env.local')) {
+      const envContent = fs.readFileSync('.env.local', 'utf8')
+      const lines = envContent.split('\n')
 
-  let allPassed = true
-
-  // Test 1: Basic health check
-  const healthPassed = await testEndpoint('Health Check', `${baseUrl}/api/health`)
-  allPassed = allPassed && healthPassed
-
-  // Test 2: Database connection
-  const dbPassed = await testEndpoint('Database Test', `${baseUrl}/api/test-db`)
-  allPassed = allPassed && dbPassed
-
-  // Test 3: Registration API (with test data)
-  const registerPassed = await testEndpoint(
-    'Registration API',
-    `${baseUrl}/api/auth/register`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      data: {
-        name: 'Test User',
-        email: `test-${Date.now()}@example.com`,
-        password: 'testpassword123'
+      for (const line of lines) {
+        if (line.trim().startsWith(varName + '=')) {
+          const value = line.split('=')[1]?.replace(/["']/g, '').trim()
+          return value
+        }
       }
     }
-  )
-  allPassed = allPassed && registerPassed
-
-  // Test 4: Sign-in page (basic connectivity)
-  const signinPassed = await testEndpoint('Sign-in Page', `${baseUrl}/auth/signin`)
-  // Note: This will likely return HTML, so we just check if it's reachable
-  allPassed = allPassed && (signinPassed !== false)
-
-  console.log('\n' + '='.repeat(50))
-
-  if (allPassed) {
-    console.log('🎉 ALL TESTS PASSED! Your Vercel deployment is working correctly.')
-    console.log('\n✅ Next steps:')
-    console.log('   1. Visit your app: ' + baseUrl)
-    console.log('   2. Try registering a new user')
-    console.log('   3. Start building your CRM/ERP workflows!')
-  } else {
-    console.log('⚠️  SOME TESTS FAILED. Check the errors above.')
-    console.log('\n🔧 Troubleshooting steps:')
-    console.log('   1. Check Vercel environment variables')
-    console.log('   2. Verify PlanetScale database connection')
-    console.log('   3. Check Vercel function logs')
-    console.log('   4. See VERCEL-FIX-GUIDE.md for detailed fixes')
+  } catch (error) {
+    return null
   }
 
-  console.log('\n📊 Summary:')
-  console.log(`   Health Check: ${healthPassed ? '✅' : '❌'}`)
-  console.log(`   Database: ${dbPassed ? '✅' : '❌'}`)
-  console.log(`   Registration: ${registerPassed ? '✅' : '❌'}`)
-  console.log(`   App Access: ${signinPassed ? '✅' : '❌'}`)
+  return null
+}
 
-  console.log('\n📖 For more help:')
-  console.log('   - VERCEL-FIX-GUIDE.md')
-  console.log('   - VERCEL-DEPLOYMENT.md')
-  console.log('   - Run: npm run troubleshoot')
+function checkVercelConfiguration() {
+  log('info', 'Checking Vercel configuration...')
+
+  const issues = []
+  const recommendations = []
+
+  // Check vercel.json
+  if (!checkFileExists('vercel.json')) {
+    issues.push('❌ vercel.json not found')
+  } else {
+    log('success', '✅ vercel.json found')
+    try {
+      const vercelConfig = JSON.parse(fs.readFileSync('vercel.json', 'utf8'))
+      if (!vercelConfig.buildCommand?.includes('prisma generate')) {
+        recommendations.push('⚠️  Consider adding "prisma generate" to build command')
+      }
+    } catch (error) {
+      issues.push('❌ vercel.json is not valid JSON')
+    }
+  }
+
+  // Check package.json scripts
+  if (checkFileExists('package.json')) {
+    try {
+      const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+
+      if (!packageJson.scripts?.build) {
+        issues.push('❌ No build script in package.json')
+      }
+
+      if (!packageJson.scripts?.start) {
+        issues.push('❌ No start script in package.json')
+      }
+
+      if (!packageJson.dependencies?.next) {
+        issues.push('❌ Next.js not found in dependencies')
+      }
+
+      if (!packageJson.dependencies?.['@prisma/client']) {
+        issues.push('❌ Prisma client not found in dependencies')
+      }
+
+      if (!packageJson.dependencies?.mysql2 && !packageJson.dependencies?.['@planetscale/serverless']) {
+        recommendations.push('⚠️  Consider adding mysql2 for MySQL database support')
+      }
+
+    } catch (error) {
+      issues.push('❌ package.json is not valid JSON')
+    }
+  } else {
+    issues.push('❌ package.json not found')
+  }
+
+  // Check Next.js configuration
+  if (!checkFileExists('next.config.ts') && !checkFileExists('next.config.js')) {
+    recommendations.push('⚠️  Consider creating next.config.ts for Vercel optimizations')
+  }
+
+  // Check .vercelignore
+  if (!checkFileExists('.vercelignore')) {
+    recommendations.push('⚠️  Consider creating .vercelignore to exclude unnecessary files')
+  }
+
+  return { issues, recommendations }
+}
+
+function checkEnvironmentVariables() {
+  log('info', 'Checking environment variables...')
+
+  const required = ['DATABASE_URL', 'NEXTAUTH_URL', 'NEXTAUTH_SECRET']
+  const optional = ['STRIPE_SECRET_KEY', 'TWILIO_ACCOUNT_SID']
+
+  const missing = []
+  const invalid = []
+
+  // Check required variables
+  for (const varName of required) {
+    const value = getEnvVar(varName)
+    if (!value) {
+      missing.push(varName)
+    } else if (value.includes('your-') || value.includes('change-in-production')) {
+      invalid.push(varName)
+    }
+  }
+
+  // Check DATABASE_URL format
+  const databaseUrl = getEnvVar('DATABASE_URL')
+  if (databaseUrl) {
+    if (!databaseUrl.includes('mysql://') && !databaseUrl.includes('planetscale://')) {
+      invalid.push('DATABASE_URL (must be MySQL/PlanetScale for Vercel)')
+    }
+  }
+
+  return { missing, invalid }
+}
+
+function testBuildProcess() {
+  log('info', 'Testing build process...')
+
+  try {
+    // Test if we can run the build command
+    execSync('npm run build --dry-run', { stdio: 'pipe' })
+    log('success', '✅ Build command is valid')
+    return true
+  } catch (error) {
+    log('error', `❌ Build command failed: ${error.message}`)
+    return false
+  }
+}
+
+function generateDeploymentSummary() {
+  log('info', 'Generating deployment summary...')
+
+  const summary = {
+    timestamp: new Date().toISOString(),
+    ready: false,
+    checks: {}
+  }
+
+  // Vercel configuration check
+  const vercelCheck = checkVercelConfiguration()
+  summary.checks.vercelConfig = {
+    issues: vercelCheck.issues.length,
+    recommendations: vercelCheck.recommendations.length
+  }
+
+  // Environment variables check
+  const envCheck = checkEnvironmentVariables()
+  summary.checks.environment = {
+    missing: envCheck.missing.length,
+    invalid: envCheck.invalid.length
+  }
+
+  // Build test
+  const buildTest = testBuildProcess()
+  summary.checks.build = buildTest
+
+  // Overall readiness
+  summary.ready = vercelCheck.issues.length === 0 &&
+                  envCheck.missing.length === 0 &&
+                  envCheck.invalid.length === 0 &&
+                  buildTest
+
+  // Save summary
+  try {
+    fs.writeFileSync('vercel-deployment-summary.json', JSON.stringify(summary, null, 2))
+    log('success', '✅ Deployment summary saved to vercel-deployment-summary.json')
+  } catch (error) {
+    log('warning', '⚠️  Could not save deployment summary')
+  }
+
+  return summary
+}
+
+function main() {
+  console.log('🚀 Vercel Deployment Test')
+  console.log('=' .repeat(50))
+
+  // Check Vercel configuration
+  const vercelCheck = checkVercelConfiguration()
+  if (vercelCheck.issues.length > 0) {
+    log('error', 'Vercel configuration issues:')
+    vercelCheck.issues.forEach(issue => console.log(`  ${issue}`))
+  }
+
+  if (vercelCheck.recommendations.length > 0) {
+    log('info', 'Vercel configuration recommendations:')
+    vercelCheck.recommendations.forEach(rec => console.log(`  ${rec}`))
+  }
+
+  console.log()
+
+  // Check environment variables
+  const envCheck = checkEnvironmentVariables()
+  if (envCheck.missing.length > 0) {
+    log('error', 'Missing required environment variables:')
+    envCheck.missing.forEach(varName => console.log(`  ❌ ${varName}`))
+  }
+
+  if (envCheck.invalid.length > 0) {
+    log('warning', 'Invalid environment variables (placeholders detected):')
+    envCheck.invalid.forEach(varName => console.log(`  ⚠️  ${varName}`))
+  }
+
+  console.log()
+
+  // Generate deployment summary
+  const summary = generateDeploymentSummary()
+
+  console.log('=' .repeat(50))
+
+  if (summary.ready) {
+    log('success', '🎉 Your application is ready for Vercel deployment!')
+    console.log()
+    log('info', 'Next steps:')
+    console.log('  1. Push your code to GitHub')
+    console.log('  2. Connect your repository to Vercel')
+    console.log('  3. Add environment variables in Vercel dashboard')
+    console.log('  4. Deploy!')
+    console.log()
+    log('info', 'Useful commands:')
+    console.log('  npm run deploy:status    # Check deployment status')
+    console.log('  npm run troubleshoot     # Troubleshoot issues')
+  } else {
+    log('warning', '⚠️  Your application needs fixes before Vercel deployment')
+    console.log()
+    log('info', 'Run these commands to fix issues:')
+    console.log('  npm run fix:vercel       # Auto-fix common issues')
+    console.log('  npm run troubleshoot     # Manual troubleshooting')
+    console.log('  node env-setup.js vercel # Setup environment variables')
+  }
+
+  console.log()
+  log('info', 'For detailed help, visit: VERCEL-DEPLOYMENT.md')
 }
 
 if (require.main === module) {
-  main().catch(console.error)
+  main()
+}
+
+module.exports = {
+  checkVercelConfiguration,
+  checkEnvironmentVariables,
+  testBuildProcess,
+  generateDeploymentSummary
 }
