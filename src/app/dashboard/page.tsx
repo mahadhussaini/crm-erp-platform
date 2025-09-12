@@ -70,8 +70,8 @@ export default function DashboardPage() {
       <DashboardLayout>
       <div className="space-y-8">
         {/* Welcome Section */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="text-center sm:text-left">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             Welcome back, {session.user?.name}!
           </h1>
           <p className="text-gray-600 mt-2">
@@ -80,7 +80,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Grid - Role-based content */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
           {/* Common stats for all roles */}
           <StatsCard
             title="Total Customers"
@@ -148,7 +148,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts and Activities Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
           {/* Sales Chart */}
           <Card className="col-span-4">
             <CardHeader>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
 
         {/* Role-specific widgets */}
         {userRole === "ADMIN" && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle>System Health</CardTitle>

@@ -1,6 +1,6 @@
-# CRM/ERP Platform
+# Salesforce
 
-A comprehensive, modular CRM/ERP platform built with Next.js, TypeScript, and modern web technologies. This platform combines Customer Relationship Management (CRM) with Enterprise Resource Planning (ERP) features in a single, scalable solution.
+A comprehensive, modular Salesforce platform built with Next.js, TypeScript, and modern web technologies. This platform combines Customer Relationship Management (CRM) with Enterprise Resource Planning (ERP) features in a single, scalable solution.
 
 ## 🚀 Features
 
@@ -65,8 +65,8 @@ A comprehensive, modular CRM/ERP platform built with Next.js, TypeScript, and mo
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/crm-erp-platform.git
-cd crm-erp-platform
+git clone https://github.com/your-username/salesforce.git
+cd salesforce
 ```
 
 ### 2. Environment Setup
@@ -81,7 +81,7 @@ nano .env.local
 
 Required environment variables:
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/crm_erp_db"
+DATABASE_URL="postgresql://user:password@localhost:5432/salesforce_db"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 STRIPE_SECRET_KEY="sk_test_..."
@@ -412,7 +412,7 @@ docker-compose logs -f db
 ## 📚 Project Structure
 
 ```
-crm-erp-platform/
+salesforce/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── api/               # API routes
@@ -469,10 +469,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support and questions:
 
-- 📧 Email: support@crm-erp-platform.com
-- 📖 Documentation: [docs.crm-erp-platform.com](https://docs.crm-erp-platform.com)
-- 🐛 Bug Reports: [GitHub Issues](https://github.com/your-username/crm-erp-platform/issues)
-- 💬 Community: [Discord](https://discord.gg/crm-erp-platform)
+- 📧 Email: support@salesforce.com
+- 📖 Documentation: [docs.salesforce.com](https://docs.salesforce.com)
+- 🐛 Bug Reports: [GitHub Issues](https://github.com/your-username/salesforce/issues)
+- 💬 Community: [Discord](https://discord.gg/salesforce)
 
 ## 🎯 Roadmap
 

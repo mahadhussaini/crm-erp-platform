@@ -18,7 +18,16 @@ import {
   FolderOpen,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3,
+  PieChart,
+  Mail,
+  Send,
+  Files,
+  MessageCircle,
+  Calendar as CalendarIcon,
+  HeadphonesIcon,
+  TrendingUp
 } from "lucide-react"
 
 interface SidebarProps {
@@ -54,6 +63,55 @@ const navigation = [
     ]
   },
   {
+    name: "Analytics",
+    group: "analytics",
+    items: [
+      { name: "Overview", href: "/analytics", icon: BarChart3 },
+      { name: "Dashboards", href: "/analytics/dashboards", icon: PieChart },
+      { name: "Reports", href: "/analytics/reports", icon: FileText },
+    ]
+  },
+  {
+    name: "Marketing",
+    group: "marketing",
+    items: [
+      { name: "Overview", href: "/marketing", icon: Mail },
+      { name: "Campaigns", href: "/marketing/campaigns", icon: Send },
+      { name: "Templates", href: "/marketing/templates", icon: FileText },
+      { name: "Lists", href: "/marketing/lists", icon: Users },
+    ]
+  },
+  {
+    name: "Sales Pipeline",
+    href: "/sales",
+    icon: TrendingUp,
+    group: "main"
+  },
+  {
+    name: "Documents",
+    href: "/documents",
+    icon: Files,
+    group: "main"
+  },
+  {
+    name: "Chat",
+    href: "/chat",
+    icon: MessageCircle,
+    group: "main"
+  },
+  {
+    name: "Calendar",
+    href: "/calendar",
+    icon: CalendarIcon,
+    group: "main"
+  },
+  {
+    name: "Support",
+    href: "/support",
+    icon: HeadphonesIcon,
+    group: "main"
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
@@ -76,8 +134,8 @@ export function Sidebar({ className }: SidebarProps) {
         {!isCollapsed ? (
           <div className="flex items-center space-x-2">
             <Image
-              src="/logo.svg"
-              alt="CRM/ERP Platform"
+              src="/logo-compact.svg"
+              alt="Salesforce"
               width={32}
               height={32}
               className="h-8 w-auto"
@@ -85,8 +143,8 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
         ) : (
           <Image
-            src="/logo.svg"
-            alt="CRM/ERP Platform"
+            src="/logo-compact.svg"
+            alt="Salesforce"
             width={24}
             height={24}
             className="h-6 w-auto mx-auto"

@@ -45,7 +45,7 @@ function getEnvVar(varName) {
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 
@@ -156,7 +156,7 @@ function testBuildProcess() {
     execSync('npm run build --dry-run', { stdio: 'pipe' })
     log('success', '✅ Build command is valid')
     return true
-  } catch (error) {
+  } catch (_error) {
     log('error', `❌ Build command failed: ${error.message}`)
     return false
   }

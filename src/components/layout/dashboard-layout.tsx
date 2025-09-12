@@ -26,7 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               className="fixed inset-0 bg-gray-600 bg-opacity-75"
               onClick={() => setSidebarOpen(false)}
             />
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
               <Sidebar />
             </div>
           </div>

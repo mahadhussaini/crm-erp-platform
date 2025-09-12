@@ -88,7 +88,7 @@ function validateDatabaseUrl(url) {
     } else {
       return { valid: false, error: 'Unsupported database type' }
     }
-  } catch (error) {
+  } catch (_error) {
     return { valid: false, error: `Invalid URL format: ${error.message}` }
   }
 }
@@ -144,7 +144,7 @@ function checkDependencies() {
       log('success', '✅ Prisma dependency found')
     }
 
-  } catch (error) {
+  } catch (_error) {
     issues.push('❌ Error reading package.json')
   }
 
@@ -158,7 +158,7 @@ function generatePrismaClient() {
     execSync('npx prisma generate', { stdio: 'inherit' })
     log('success', '✅ Prisma client generated successfully')
     return true
-  } catch (error) {
+  } catch (_error) {
     log('error', `❌ Failed to generate Prisma client: ${error.message}`)
     return false
   }
@@ -171,7 +171,7 @@ function pushDatabaseSchema() {
     execSync('npx prisma db push', { stdio: 'inherit' })
     log('success', '✅ Database schema pushed successfully')
     return true
-  } catch (error) {
+  } catch (_error) {
     log('error', `❌ Failed to push schema: ${error.message}`)
     return false
   }
@@ -190,7 +190,7 @@ function testDatabaseConnection() {
         console.log('Database connection successful')
         await prisma.$disconnect()
         process.exit(0)
-      } catch (error) {
+      } catch (_error) {
         console.error('Database connection failed:', error.message)
         process.exit(1)
       }
@@ -205,7 +205,7 @@ function testDatabaseConnection() {
     fs.unlinkSync('temp-db-test.js')
     log('success', '✅ Database connection test passed')
     return true
-  } catch (error) {
+  } catch (_error) {
     fs.unlinkSync('temp-db-test.js')
     log('error', `❌ Database connection test failed: ${error.message}`)
     return false

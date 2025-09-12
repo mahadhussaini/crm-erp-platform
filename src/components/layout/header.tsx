@@ -39,12 +39,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center space-x-2">
             <Image
               src="/logo.svg"
-              alt="CRM/ERP Platform"
+              alt="Salesforce"
               width={32}
               height={32}
-              className="h-8 w-auto"
+              className="h-6 md:h-8 w-auto"
             />
-            <span className="text-lg font-bold text-gray-900 hidden sm:block">CRM/ERP</span>
+            <span className="text-lg font-bold text-gray-900 hidden sm:block">Salesforce</span>
           </div>
 
           <div className="relative max-w-md hidden md:block">
@@ -57,7 +57,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />

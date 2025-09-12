@@ -48,7 +48,7 @@ export function suppressExtensionErrors() {
   // Additional function to suppress extension-related console errors
   if (typeof window !== 'undefined') {
     const originalConsoleError = console.error
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       const message = args.join(' ')
       
       // Filter out extension-related errors

@@ -29,6 +29,9 @@ const createPrismaClient = () => {
 // Use existing client or create new one
 export const db = globalThis.prisma || createPrismaClient()
 
+// Export both db and prisma for compatibility
+export const prisma = db
+
 // In production/serverless environments, don't cache the client to avoid connection issues
 if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = db

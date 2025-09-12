@@ -111,12 +111,14 @@ export async function POST(request: NextRequest) {
       user
     })
   } catch (error) {
+    console.error("Registration error:", error)
+
     // Handle Zod validation errors
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           error: "Validation error",
-          details: error.errors.map(err => ({
+          details: error.issues.map((err: z.ZodIssue) => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -126,18 +128,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle Prisma errors
-    if (error?.code) {
-      console.error("Database error:", error)
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as { code: string }
 
       // Handle specific database errors
-      if (error.code === 'P1001') {
+      if (prismaError.code === 'P1001') {
         return NextResponse.json(
           { error: "Database server unreachable" },
           { status: 500 }
         )
       }
 
-      if (error.code === 'P2002') {
+      if (prismaError.code === 'P2002') {
         return NextResponse.json(
           { error: "User with this email already exists" },
           { status: 400 }
@@ -151,11 +153,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle other errors
-    console.error("Registration error:", error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

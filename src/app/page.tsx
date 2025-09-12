@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const metadata = {
-  title: 'CRM/ERP Platform - Business Management Solution',
+  title: 'Salesforce - Business Management Solution',
   description: 'Your comprehensive business management solution for CRM and ERP needs.',
 }
 
@@ -19,16 +20,18 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8 text-center">
+        <div className="max-w-md w-full space-y-8 text-center px-4">
         <div className="space-y-4">
           <div className="mx-auto">
-            <img
+            <Image
               src="/logo.svg"
-              alt="CRM/ERP Platform"
+              alt="Salesforce"
+              width={80}
+              height={80}
               className="h-20 w-auto mx-auto mb-4"
             />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900">CRM/ERP Platform</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Salesforce</h1>
           <p className="text-xl text-gray-600">
             Your comprehensive business management solution
           </p>

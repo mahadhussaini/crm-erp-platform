@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CRM/ERP Platform Deployment Script
+# Salesforce Deployment Script
 # This script helps deploy the application to various environments
 
 set -e

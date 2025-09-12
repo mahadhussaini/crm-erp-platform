@@ -13,18 +13,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CRM/ERP Platform",
+  title: "Salesforce",
   description: "Comprehensive business management solution for customer relationship and enterprise resource management",
   keywords: ["CRM", "ERP", "Business Management", "Sales", "Inventory", "Customer Relationship", "Enterprise Software"],
-  authors: [{ name: "CRM/ERP Platform Team" }],
+  authors: [{ name: "Salesforce Team" }],
   viewport: "width=device-width, initial-scale=1",
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/logo-square.svg",
   },
   openGraph: {
-    title: "CRM/ERP Platform",
+    title: "Salesforce",
     description: "Comprehensive business management solution",
     images: ["/logo.svg"],
   },

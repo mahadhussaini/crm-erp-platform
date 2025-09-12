@@ -60,7 +60,7 @@ const testConnection = async () => {
         console.log('✅ Database schema appears to be applied')
         console.log('📋 Tables:', tables.map(t => t.table_name).join(', '))
       }
-    } catch (schemaError) {
+    } catch (_schemaError) {
       console.log('⚠️  Could not check schema - this is normal for fresh databases')
     }
 

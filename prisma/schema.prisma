@@ -38,6 +38,35 @@ model User {
   attendances  Attendance[]
   assignedTasks ProjectTask[]
 
+  // Analytics Relations
+  reports    Report[]
+  dashboards Dashboard[]
+
+  // Email Campaign Relations
+  emailTemplates EmailTemplate[]
+  emailCampaigns EmailCampaign[]
+  emailLists     EmailList[]
+
+  // Document Management Relations
+  documents        Document[]
+  documentFolders  DocumentFolder[]
+  documentShares   DocumentShare[]
+  documentVersions DocumentVersion[]
+
+  // Chat Relations
+  chatRoomsCreated ChatRoom[]
+  chatRoomMembers  ChatRoomMember[]
+  chatMessages     ChatMessage[]
+
+  // Calendar Relations
+  eventsCreated Event[]
+  eventAttendees EventAttendee[]
+
+  // Support Relations
+  ticketsCreated  SupportTicket[] @relation("TicketCreator")
+  ticketsAssigned SupportTicket[] @relation("TicketAssignee")
+  ticketResponses TicketResponse[]
+
   @@map("users")
 }
 
@@ -254,6 +283,7 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   orders Order[]
+  supportTickets SupportTicket[]
 
   @@map("customers")
 }
@@ -430,4 +460,499 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   CANCELLED
+}
+
+// Analytics & Reporting Models
+model Report {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  type        ReportType
+  query       String? // Stored query or parameters
+  isPublic    Boolean    @default(false)
+  userId      String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id])
+  schedules ReportSchedule[]
+
+  @@map("reports")
+}
+
+model ReportSchedule {
+  id         String            @id @default(cuid())
+  reportId   String
+  frequency  ScheduleFrequency
+  recipients String[] // Email addresses
+  isActive   Boolean           @default(true)
+  lastRun    DateTime?
+  nextRun    DateTime
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("report_schedules")
+}
+
+model Dashboard {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  layout      String // JSON layout configuration
+  isPublic    Boolean  @default(false)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User              @relation(fields: [userId], references: [id])
+  widgets DashboardWidget[]
+
+  @@map("dashboards")
+}
+
+model DashboardWidget {
+  id          String     @id @default(cuid())
+  dashboardId String
+  type        WidgetType
+  title       String
+  config      String // JSON configuration
+  position    String // JSON position data
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@map("dashboard_widgets")
+}
+
+enum ReportType {
+  SALES
+  LEADS
+  CUSTOMERS
+  PRODUCTS
+  ORDERS
+  PROJECTS
+  ATTENDANCE
+  CUSTOM
+}
+
+enum ScheduleFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum WidgetType {
+  CHART_BAR
+  CHART_LINE
+  CHART_PIE
+  CHART_DOUGHNUT
+  METRIC_CARD
+  TABLE
+  PROGRESS
+  ACTIVITY_FEED
+}
+
+// Email Campaign Models
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String
+  content     String   // HTML content
+  previewText String?
+  isActive    Boolean  @default(true)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User            @relation(fields: [userId], references: [id])
+  campaigns EmailCampaign[]
+
+  @@map("email_templates")
+}
+
+model EmailCampaign {
+  id             String            @id @default(cuid())
+  name           String
+  subject        String
+  fromEmail      String
+  fromName       String
+  templateId     String?
+  content        String? // Can override template content
+  status         CampaignStatus    @default(DRAFT)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  recipientCount Int               @default(0)
+  openRate       Float             @default(0)
+  clickRate      Float             @default(0)
+  userId         String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user      User                  @relation(fields: [userId], references: [id])
+  template  EmailTemplate?        @relation(fields: [templateId], references: [id])
+  lists     EmailCampaignList[]
+  analytics EmailCampaignAnalytics[]
+
+  @@map("email_campaigns")
+}
+
+model EmailList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User                  @relation(fields: [userId], references: [id])
+  subscribers EmailSubscriber[]
+  campaigns   EmailCampaignList[]
+
+  @@map("email_lists")
+}
+
+model EmailSubscriber {
+  id          String            @id @default(cuid())
+  email       String
+  firstName   String?
+  lastName    String?
+  status      SubscriberStatus  @default(ACTIVE)
+  source      String?
+  tags        String[] // JSON array of tags
+  customFields String? // JSON object for custom fields
+  listId      String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  list EmailList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([email, listId])
+  @@map("email_subscribers")
+}
+
+model EmailCampaignList {
+  id         String @id @default(cuid())
+  campaignId String
+  listId     String
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  list     EmailList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, listId])
+  @@map("email_campaign_lists")
+}
+
+model EmailCampaignAnalytics {
+  id           String               @id @default(cuid())
+  campaignId   String
+  subscriberId String?
+  event        EmailAnalyticsEvent
+  timestamp    DateTime             @default(now())
+  metadata     String? // JSON metadata
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("email_campaign_analytics")
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum SubscriberStatus {
+  ACTIVE
+  UNSUBSCRIBED
+  BOUNCED
+  COMPLAINED
+}
+
+enum EmailAnalyticsEvent {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  UNSUBSCRIBED
+  COMPLAINED
+}
+
+// Document Management Models
+model Document {
+  id          String           @id @default(cuid())
+  name        String
+  originalName String
+  description String?
+  fileSize    Int
+  mimeType    String
+  filePath    String
+  category    DocumentCategory @default(GENERAL)
+  tags        String[] // JSON array of tags
+  isPublic    Boolean          @default(false)
+  uploadedBy  String
+  folderId    String?
+  version     Int              @default(1)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  uploader User              @relation(fields: [uploadedBy], references: [id])
+  folder   DocumentFolder?   @relation(fields: [folderId], references: [id])
+  shares   DocumentShare[]
+  versions DocumentVersion[]
+
+  @@map("documents")
+}
+
+model DocumentFolder {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  isPublic    Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator     User             @relation(fields: [createdBy], references: [id])
+  parent      DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  subfolders  DocumentFolder[] @relation("FolderHierarchy")
+  documents   Document[]
+  shares      DocumentShare[]
+
+  @@map("document_folders")
+}
+
+model DocumentShare {
+  id         String          @id @default(cuid())
+  documentId String?
+  folderId   String?
+  userId     String
+  permission SharePermission @default(VIEW)
+  expiresAt  DateTime?
+  createdAt  DateTime        @default(now())
+
+  document Document?       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  folder   DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("document_shares")
+}
+
+model DocumentVersion {
+  id         String   @id @default(cuid())
+  documentId String
+  version    Int
+  filePath   String
+  fileSize   Int
+  comment    String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator  User     @relation(fields: [createdBy], references: [id])
+
+  @@unique([documentId, version])
+  @@map("document_versions")
+}
+
+enum DocumentCategory {
+  GENERAL
+  CONTRACT
+  INVOICE
+  PROPOSAL
+  PRESENTATION
+  SPREADSHEET
+  IMAGE
+  VIDEO
+  AUDIO
+  ARCHIVE
+}
+
+enum SharePermission {
+  VIEW
+  EDIT
+  ADMIN
+}
+
+// Chat/Communication Models
+model ChatRoom {
+  id          String     @id @default(cuid())
+  name        String?
+  type        RoomType   @default(DIRECT)
+  description String?
+  isActive    Boolean    @default(true)
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  creator     User              @relation(fields: [createdBy], references: [id])
+  members     ChatRoomMember[]
+  messages    ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatRoomMember {
+  id       String           @id @default(cuid())
+  roomId   String
+  userId   String
+  role     ChatMemberRole   @default(MEMBER)
+  joinedAt DateTime         @default(now())
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@map("chat_room_members")
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  content   String
+  type      MessageType @default(TEXT)
+  roomId    String
+  senderId  String
+  editedAt  DateTime?
+  createdAt DateTime    @default(now())
+
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+enum RoomType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+enum ChatMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+// Calendar & Scheduling Models
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime
+  isAllDay    Boolean     @default(false)
+  type        EventType   @default(MEETING)
+  status      EventStatus @default(CONFIRMED)
+  createdBy   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  creator    User            @relation(fields: [createdBy], references: [id])
+  attendees  EventAttendee[]
+
+  @@map("events")
+}
+
+model EventAttendee {
+  id       String           @id @default(cuid())
+  eventId  String
+  userId   String
+  status   AttendeeStatus   @default(PENDING)
+  response String?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_attendees")
+}
+
+enum EventType {
+  MEETING
+  CALL
+  TASK
+  REMINDER
+  DEADLINE
+}
+
+enum EventStatus {
+  CONFIRMED
+  TENTATIVE
+  CANCELLED
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+// Support Ticketing Models
+model SupportTicket {
+  id          String         @id @default(cuid())
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    String?
+  customerId  String?
+  assignedTo  String?
+  createdBy   String
+  closedAt    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  assignee  User?     @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  creator   User      @relation("TicketCreator", fields: [createdBy], references: [id])
+  responses TicketResponse[]
+
+  @@map("support_tickets")
+}
+
+model TicketResponse {
+  id        String   @id @default(cuid())
+  ticketId  String
+  content   String
+  isPublic  Boolean  @default(true)
+  authorId  String
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id])
+
+  @@map("ticket_responses")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
