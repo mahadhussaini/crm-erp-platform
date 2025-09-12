@@ -46,10 +46,16 @@ export function SigninForm() {
         setError("root", {
           message: "Invalid email or password"
         })
+      } else if (result?.ok) {
+        // Force a hard refresh to ensure session is properly established
+        window.location.href = "/dashboard"
       } else {
-        router.push("/dashboard")
+        setError("root", {
+          message: "Login failed. Please try again."
+        })
       }
-    } catch {
+    } catch (error) {
+      console.error("Login error:", error)
       setError("root", {
         message: "An error occurred. Please try again."
       })

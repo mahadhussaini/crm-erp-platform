@@ -43,7 +43,12 @@ const mockActivities = [
 ]
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect("/auth/signin")
+    }
+  })
 
   if (status === "loading") {
     return (
@@ -55,6 +60,7 @@ export default function DashboardPage() {
 
   if (!session) {
     redirect("/auth/signin")
+    return null
   }
 
   const userRole = session.user?.role || "EMPLOYEE"

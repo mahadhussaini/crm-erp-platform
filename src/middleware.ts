@@ -18,7 +18,7 @@ export default withAuth(
       return NextResponse.next()
     }
 
-    // Redirect authenticated users away from auth pages
+    // Redirect authenticated users away from auth pages to dashboard
     if (isAuth && isAuthPage) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
