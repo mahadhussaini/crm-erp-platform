@@ -57,21 +57,34 @@ const nextConfig: NextConfig = {
             key: 'Cache-Control',
             value: 'no-cache, no-store, must-revalidate',
           },
-          // Prevent browser extensions from modifying the DOM
+          // Content Security Policy - Allow Vercel Live for development
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self'",
-              "connect-src 'self' https://vercel.live",
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'"
-            ].join('; ')
+            value: process.env.NODE_ENV === 'development' 
+              ? [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+                  "style-src 'self' 'unsafe-inline'",
+                  "img-src 'self' data: https:",
+                  "font-src 'self'",
+                  "connect-src 'self' https://vercel.live",
+                  "frame-src 'self' https://vercel.live",
+                  "object-src 'none'",
+                  "base-uri 'self'",
+                  "form-action 'self'"
+                ].join('; ')
+              : [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-inline'",
+                  "style-src 'self' 'unsafe-inline'",
+                  "img-src 'self' data: https:",
+                  "font-src 'self'",
+                  "connect-src 'self'",
+                  "frame-src 'none'",
+                  "object-src 'none'",
+                  "base-uri 'self'",
+                  "form-action 'self'"
+                ].join('; ')
           },
         ],
       },

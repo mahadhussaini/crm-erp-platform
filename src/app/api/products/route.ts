@@ -34,9 +34,9 @@ export async function GET(request: NextRequest) {
     const where: {
       isActive?: boolean
       OR?: Array<{
-        name?: { contains: string; mode: "insensitive" }
-        sku?: { contains: string; mode: "insensitive" }
-        category?: { contains: string; mode: "insensitive" }
+        name?: { contains: string }
+        sku?: { contains: string }
+        category?: { contains: string }
       }>
       category?: string
       stock?: { lte: number }
@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" as const } },
-        { sku: { contains: search, mode: "insensitive" as const } },
-        { category: { contains: search, mode: "insensitive" as const } }
+        { name: { contains: search } },
+        { sku: { contains: search } },
+        { category: { contains: search } }
       ]
     }
     if (category) where.category = category

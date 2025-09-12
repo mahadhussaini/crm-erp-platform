@@ -149,6 +149,8 @@ export const authOptions: NextAuthOptions = {
       if (url.startsWith("/")) return `${baseUrl}${url}`
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url
+      // For production, ensure proper HTTPS protocol
+      else if (url.startsWith("http") && new URL(url).origin === new URL(baseUrl).origin) return url
       // Default redirect to dashboard after successful login
       return `${baseUrl}/dashboard`
     }

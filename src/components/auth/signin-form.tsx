@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -18,10 +18,12 @@ const signinSchema = z.object({
 
 type SigninFormData = z.infer<typeof signinSchema>
 
-export function SigninForm() {
+function SigninFormInner() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
   const {
     register,
@@ -48,7 +50,7 @@ export function SigninForm() {
         })
       } else if (result?.ok) {
         // Force a hard refresh to ensure session is properly established
-        window.location.href = "/dashboard"
+        window.location.href = callbackUrl
       } else {
         setError("root", {
           message: "Login failed. Please try again."
@@ -65,7 +67,7 @@ export function SigninForm() {
   }
 
   const handleGoogleSignin = () => {
-    signIn("google", { callbackUrl: "/dashboard" })
+    signIn("google", { callbackUrl })
   }
 
   return (
@@ -182,5 +184,22 @@ export function SigninForm() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+export function SigninForm() {
+  return (
+    <Suspense fallback={
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+          <CardDescription className="text-center">
+            Loading...
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    }>
+      <SigninFormInner />
+    </Suspense>
   )
 }
