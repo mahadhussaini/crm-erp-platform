@@ -27,7 +27,8 @@ import {
   MessageCircle,
   Calendar as CalendarIcon,
   HeadphonesIcon,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from "lucide-react"
 
 interface SidebarProps {
@@ -39,6 +40,12 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    group: "main"
+  },
+  {
+    name: "AI Tools",
+    href: "/ai",
+    icon: Sparkles,
     group: "main"
   },
   {

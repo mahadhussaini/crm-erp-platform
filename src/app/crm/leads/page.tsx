@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { LeadsKanban } from "@/components/crm/leads-kanban"
+import { LeadScorer } from "@/components/ai/lead-scorer"
+import { EmailGenerator } from "@/components/ai/email-generator"
+import { AITextGenerator } from "@/components/ai/ai-text-generator"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -92,7 +95,7 @@ export default function LeadsPage() {
   const { data: session, status } = useSession()
   const [searchTerm, setSearchTerm] = useState("")
   const [leads, setLeads] = useState(mockLeads)
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban")
+  const [viewMode, setViewMode] = useState<"kanban" | "list" | "ai">("kanban")
 
   if (status === "loading") {
     return <div>Loading...</div>
@@ -217,10 +220,11 @@ export default function LeadsPage() {
             />
           </div>
 
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "kanban" | "list")}>
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "kanban" | "list" | "ai")}>
             <TabsList>
               <TabsTrigger value="kanban">Kanban</TabsTrigger>
               <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="ai">AI Tools</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -283,6 +287,66 @@ export default function LeadsPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ai" className="mt-6">
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Lead Scoring */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">AI Lead Scoring</h3>
+                  {filteredLeads.length > 0 && (
+                    <LeadScorer
+                      leadData={{
+                        companyName: filteredLeads[0].company.name,
+                        industry: "Technology", // This would come from actual lead data
+                        companySize: "50-200 employees", // This would come from actual lead data
+                        website: "www.example.com", // This would come from actual lead data
+                        description: filteredLeads[0].title,
+                        location: "San Francisco, CA" // This would come from actual lead data
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Email Generator */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">AI Email Generator</h3>
+                  {filteredLeads.length > 0 && (
+                    <EmailGenerator
+                      contact={{
+                        name: `${filteredLeads[0].contact.firstName} ${filteredLeads[0].contact.lastName}`,
+                        company: filteredLeads[0].company.name,
+                        position: "Decision Maker", // This would come from actual lead data
+                        email: filteredLeads[0].contact.email
+                      }}
+                      context={`Following up on our discussion about ${filteredLeads[0].title} with a potential value of $${filteredLeads[0].value.toLocaleString()}.`}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Text Generator for Lead-related Content */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Content Generator</h3>
+                <AITextGenerator
+                  templates={[
+                    {
+                      label: "Proposal Draft",
+                      prompt: "Write a business proposal for"
+                    },
+                    {
+                      label: "Meeting Summary",
+                      prompt: "Summarize key points from our meeting about"
+                    },
+                    {
+                      label: "Follow-up Email",
+                      prompt: "Write a professional follow-up email regarding"
+                    }
+                  ]}
+                />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

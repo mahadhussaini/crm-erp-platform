@@ -61,6 +61,18 @@ TWILIO_WEBHOOK_SECRET="..."
 - Get from Twilio Console
 - Enables SMS and WhatsApp messaging
 
+### OpenAI API Integration
+```env
+OPENAI_API_KEY="sk-..."
+OPENAI_DEFAULT_MODEL="gpt-4.1-nano"
+OPENAI_MAX_TOKENS="4000"
+OPENAI_TEMPERATURE="0.7"
+OPENAI_TIMEOUT="30000"
+```
+- Get API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+- Enables AI-powered features like chat completion, text generation, image generation, and embeddings
+- All configuration variables are optional except `OPENAI_API_KEY`
+
 ### Email Configuration
 ```env
 SMTP_HOST="smtp.gmail.com"
@@ -152,6 +164,17 @@ nano .env.local
    - SMS: `https://yourdomain.com/api/webhooks/twilio`
    - Voice: `https://yourdomain.com/api/webhooks/twilio`
 
+### OpenAI Setup
+1. Create account at [OpenAI Platform](https://platform.openai.com/)
+2. Navigate to API Keys section
+3. Create a new API key (starts with `sk-`)
+4. Copy the API key and add it to your environment variables
+5. (Optional) Configure additional settings:
+   - `OPENAI_DEFAULT_MODEL`: Choose your default model (default: `gpt-4.1-nano`)
+   - `OPENAI_MAX_TOKENS`: Maximum tokens per request (default: `4000`)
+   - `OPENAI_TEMPERATURE`: Creativity level 0-2 (default: `0.7`)
+   - `OPENAI_TIMEOUT`: Request timeout in milliseconds (default: `30000`)
+
 ## Security Best Practices
 
 1. **Never commit `.env.local` to version control**
@@ -169,6 +192,7 @@ nano .env.local
 2. **OAuth login failures**: Verify redirect URIs match exactly
 3. **Stripe webhooks not working**: Ensure webhook endpoint is publicly accessible
 4. **Twilio SMS not sending**: Check phone number format and region restrictions
+5. **OpenAI API errors**: Verify API key format (should start with `sk-`) and account has credits
 
 ### Testing Configuration
 

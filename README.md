@@ -36,6 +36,7 @@ A comprehensive, modular Salesforce platform built with Next.js, TypeScript, and
 ### Integrations
 - **Payment Processing**: Stripe integration for payments
 - **SMS Communication**: Twilio integration for messaging
+- **AI & Machine Learning**: OpenAI integration for chat completion, text generation, and embeddings
 - **Email Services**: SendGrid/Mailgun integration
 - **OAuth Providers**: Google, Microsoft authentication
 - **Webhook Support**: Real-time data synchronization
@@ -87,7 +88,10 @@ NEXTAUTH_SECRET="your-secret-key-here"
 STRIPE_SECRET_KEY="sk_test_..."
 TWILIO_ACCOUNT_SID="AC..."
 TWILIO_AUTH_TOKEN="..."
+OPENAI_API_KEY="sk-..."
 ```
+
+**Note**: OpenAI API key is required for AI-powered features. Get your key from [OpenAI Platform](https://platform.openai.com/api-keys).
 
 ### 3. Development with Docker
 
@@ -166,6 +170,11 @@ docker-compose up --build -d
 #### Integrations
 - `POST /api/payments/create-intent` - Create Stripe payment intent
 - `POST /api/sms/send` - Send SMS via Twilio
+- `POST /api/ai/chat` - OpenAI chat completion
+- `POST /api/ai/generate` - OpenAI text generation
+- `POST /api/ai/image` - OpenAI image generation
+- `POST /api/ai/summarize` - OpenAI text summarization
+- `GET /api/ai/health` - OpenAI service health check
 - `POST /api/webhooks/stripe` - Stripe webhook handler
 - `POST /api/webhooks/twilio` - Twilio webhook handler
 
@@ -336,6 +345,14 @@ TWILIO_AUTH_TOKEN="..."
 TWILIO_PHONE_NUMBER="+1234567890"
 ```
 
+#### OpenAI (AI/ML)
+```env
+OPENAI_API_KEY="sk-..."
+OPENAI_DEFAULT_MODEL="gpt-4.1-nano"
+OPENAI_MAX_TOKENS="4000"
+OPENAI_TEMPERATURE="0.7"
+```
+
 #### OAuth Providers
 ```env
 GOOGLE_CLIENT_ID="..."
@@ -430,6 +447,7 @@ salesforce/
 │   │   ├── db.ts              # Database connection
 │   │   ├── stripe.ts          # Stripe integration
 │   │   ├── twilio.ts          # Twilio integration
+│   │   ├── openai.ts          # OpenAI integration
 │   │   └── utils.ts           # General utilities
 │   └── types/                 # TypeScript type definitions
 ├── prisma/                    # Database schema and migrations
